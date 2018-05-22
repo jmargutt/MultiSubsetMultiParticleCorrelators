@@ -1,6 +1,6 @@
 # ToyGenericFramework
 
-Simple code to calculate m-particle correlations from n-subsets (n = 1,...m), which we define "labelled multi-particle correlators".
+Simple code to calculate m-particle correlators from n-subsets (n = 1,...m), a.k.a. "labelled multi-particle correlators".
 
 Based on the Generic Framework algorithms (arXiv:1312.3572).
 Written in C++, from AliRoot/AliPhysics classes.
