@@ -4,7 +4,7 @@ Simple code to automatically compute n-particle correlators between n or less ar
 
 Written in C++, from AliRoot/AliPhysics classes.
 
-Running example based on the toy MC "FlowAnalysisOnTheFly" (credits: Ante Bilandzic), execute with:
+Running example based on the toy Monte Carlo "FlowAnalysisOnTheFly" (credits: ALICE Collaboration), execute with:
 
 $ root runFlowAnalysisOnTheFly.C
 
