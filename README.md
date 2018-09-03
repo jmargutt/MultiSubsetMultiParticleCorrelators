@@ -14,7 +14,7 @@ Contact: Jacopo Margutti (jacopo.margutti@cern.ch)
 
 Notes:
 
-1) Subsets are currently defined only according to particles' charge and pseudorapidity, can be trivially extended to any particle feature.
+1) Subsets are currently defined according to particles' charge and pseudorapidity, can be trivially extended to any particle feature.
 2) Overlapping subsets must be specified by hand, with AliFlowAnalysisMSMPC::SetOverlappingSubsets()
 3) The recursive algorithm to compute correlators is encoded in the method AliFlowAnalysisMSMPC::ucN()
 
