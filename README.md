@@ -9,3 +9,13 @@ Running example based on the toy MC "FlowAnalysisOnTheFly" (credits: Ante Biland
 $ root runFlowAnalysisOnTheFly.C
 
 Contact: Jacopo Margutti (jacopo.margutti@cern.ch)
+
+***********************************************************************************************************************************
+
+Notes:
+
+1) Subsets are currently defined only according to particles' charge and pseudorapidity, can be trivially extended to any particle feature.
+2) The recursive algorithm to compute correlators is encoded in the method AliFlowAnalysisSubsetsGF::ucN()
+
+
+
