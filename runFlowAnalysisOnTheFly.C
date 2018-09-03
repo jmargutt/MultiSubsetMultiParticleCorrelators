@@ -1,20 +1,25 @@
+////////////////////////////////////////////////////////////////////////////////
+// simple macro to test flow methods
+// adapted from  AliPhysics/PWGCF/FLOW/macros/runFlowAnalysisOnTheFly.C
+// to test Multi-Subset Multi-Particle Correlators
+// author: Jacopo Margutti (jacopo.margutti@cern.ch)
+////////////////////////////////////////////////////////////////////////////////
+
 // Settings for the simulation of events 'on the fly':
 //  a) Determine how many events you want to create;
 //  b) Set random or same seed for random generator;
 //  c) Determine multiplicites of events;
 //  d) Parametrize the phi distribution;
-//   d1) Enable/disable uniform event-wise fluctuations of v2;
-//   d2) Enable/diable pt dependence of v2;
+//  d1) Enable/disable uniform event-wise fluctuations of v2;
+//  d2) Enable/diable pt dependence of v2;
 //  e) Parametrize the pt distribution;
 //  f) Determine how many times each sampled particle will be taken (simulating nonflow);
 //  g) Configure detector's:
-//   g1) acceptance;
-//   g2) efficiency;
+//  g1) acceptance;
+//  g2) efficiency;
 //  h) Decide which flow analysis methods you will use;
 //  i) Define simple cuts for Reference Particle (RP) selection;
 //  j) Define simple cuts for Particle of Interest (POI) selection;
-//  k) Define the ranges for two subevents separated with eta gap (needed only for SP method);
-//  l) Enable/disable usage of particle weights.
 
 // a) Determine how many events you want to create:
 Int_t iNevts = 1000; // total statistics
@@ -85,18 +90,7 @@ Double_t p = 0.5; // probablitity that particles emitted in [ptMin,ptMax> are ta
 
 // h) Decide which flow analysis methods you will use:
 Bool_t MCEP     = kTRUE; // Monte Carlo Event Plane
-Bool_t SP       = kTRUE; // Scalar Product (a.k.a 'flow analysis with eta gaps')
-Bool_t GFC      = kTRUE; // Generating Function Cumulants
-Bool_t QC       = kTRUE; // Q-cumulants
-Bool_t FQD      = kTRUE; // Fitted q-distribution
-Bool_t LYZ1SUM  = kTRUE; // Lee-Yang Zero (sum generating function), first pass over the data
-Bool_t LYZ1PROD = kTRUE; // Lee-Yang Zero (product generating function), first pass over the data
-Bool_t LYZ2SUM  = kFALSE; // Lee-Yang Zero (sum generating function), second pass over the data
-Bool_t LYZ2PROD = kFALSE; // Lee-Yang Zero (product generating function), second pass over the data
-Bool_t LYZEP    = kFALSE; // Lee-Yang Zero Event Plane
-Bool_t MH       = kFALSE; // Mixed Harmonics (used for strong parity violation studies)
-Bool_t NL       = kFALSE; // Nested Loops (neeed for debugging, only for developers)
-Bool_t MPC      = kTRUE; // Multi-particle correlations (NEW!)
+Bool_t MSMPC    = kTRUE; // Multi-Subevent Multi-Particle Correlations (NEW!)
 
 // i) Define simple cuts for Reference Particle (RP) selection:
 Double_t ptMinRP = 0.0; // in GeV
@@ -117,17 +111,6 @@ Double_t phiMinPOI = 0.0; // in degrees
 Double_t phiMaxPOI = 360.0; // in degrees
 Bool_t bUseChargePOI = kFALSE; // if kFALSE, POIs with both sign of charges are taken
 Int_t chargePOI = -1; // +1 or -1
-
-// k) Define the ranges for two subevents separated with eta gap (needed only for SP method):
-Double_t etaMinA = -0.8; // minimum eta of subevent A
-Double_t etaMaxA = -0.5; // maximum eta of subevent A
-Double_t etaMinB = 0.5; // minimum eta of subevent B
-Double_t etaMaxB = 0.8; // maximum eta of subevent B
-
-// l) Enable/disable usage of particle weights:
-Bool_t usePhiWeights = kFALSE; // phi weights
-Bool_t usePtWeights  = kFALSE; // pt weights
-Bool_t useEtaWeights = kFALSE; // eta weights
 
 enum anaModes {mLocal,mLocalSource,mLocalPAR};
 // mLocal: Analyze data on your computer using aliroot
@@ -186,7 +169,6 @@ int runFlowAnalysisOnTheFly(Int_t mode=mLocal)
   eventMakerOnTheFly->SetV2vsPtCutOff(dV2vsPtCutOff);
   eventMakerOnTheFly->SetV2vsPtMax(dV2vsPtMax);
  }
- eventMakerOnTheFly->SetSubeventEtaRange(etaMinA,etaMaxA,etaMinB,etaMaxB);
  eventMakerOnTheFly->SetNTimes(nTimes);
  if(!uniformAcceptance)
  {
@@ -208,51 +190,40 @@ int runFlowAnalysisOnTheFly(Int_t mode=mLocal)
  eventMakerOnTheFly->Init();
 
  // c) If enabled, access particle weights from external file:
- TFile *fileWithWeights = NULL;
- TList *listWithWeights = NULL;
- if(usePhiWeights||usePtWeights||useEtaWeights)
- {
-  fileWithWeights = TFile::Open("weights.root","READ");
-  if(fileWithWeights)
-  {
-   listWithWeights = (TList*)fileWithWeights->Get("weights");
-  }
-  else
-  {
-   cout << " WARNING: the file <weights.root> with weights from the previous run was not found."<<endl;
-   break;
-  }
- } // end of if(usePhiWeights||usePtWeights||useEtaWeights)
+ // TBI
 
  // d) Configure the flow analysis methods:
- AliFlowAnalysisWithSimpleGF* ToyGF = new AliFlowAnalysisWithSimpleGF();
 
  // MCEP = monte carlo event plane
  if(MCEP)
  {
-  //AliFlowAnalysisWithMCEventPlane *mcep = new AliFlowAnalysisWithMCEventPlane();
-  mcep = new AliFlowAnalysisWithMCEventPlane();
-  mcep->SetHarmonic(2); // default is v2
-  mcep->Init();
+  AliFlowAnalysisWithMCEventPlane *FlowAnalysisMCEP = new AliFlowAnalysisWithMCEventPlane();
+  FlowAnalysisMCEP->SetHarmonic(2); // default is v2
+  FlowAnalysisMCEP->Init();
  } // end of if(MCEP)
- // ToyGF = Toy Generic Framework
- if(ToyGF)
+
+ if(MSMPC)
  {
-   // define subevents
-   // WARNING: subevents must not overlap
-   ToyGF->SetNSubevents(2);
-   ToyGF->DefineSubevent(1, 1, -1., 0.);
-   ToyGF->DefineSubevent(2, -1, 0., 1.);
+   AliFlowAnalysisMSMPC* FlowAnalysisMSMPC = new AliFlowAnalysisMSMPC();
+   // define subsets
+   FlowAnalysisMSMPC->SetNSubsets(3);
+   FlowAnalysisMSMPC->DefineSubset(1, 1, -1., 0.); // positive charge, negative rapidity
+   FlowAnalysisMSMPC->DefineSubset(2, -1, 0., 1.); // negative charge, positive rapidity
+   FlowAnalysisMSMPC->DefineSubset(3, 0, -1., 1.); // any charge, any rapidity
+   // set overlapping subsets
+   FlowAnalysisMSMPC->SetOverlappingSubsets(1,3);
+   FlowAnalysisMSMPC->SetOverlappingSubsets(2,3);
    // define correlators
-   ToyGF->SetNCorrelators(2);
-   Int_t harmonics_cor1[] = {-2,-2,2,2};
+   FlowAnalysisMSMPC->SetNCorrelators(2);
+   Int_t harmonics_cor1[] = {2,2,-2,-2};
    Int_t subevents_cor1[] = {1,1,2,2};
-   ToyGF->SetInfoCorrelator(1,4,TArrayI(4,harmonics_cor1),TArrayI(4,subevents_cor1));
-   Int_t harmonics_cor2[] = {-2,-2,4};
-   Int_t subevents_cor2[] = {1,1,2};
-   ToyGF->SetInfoCorrelator(2,3,TArrayI(3,harmonics_cor2),TArrayI(3,subevents_cor2));
-   ToyGF->Init();
- } // end of if(ToyGF)
+   FlowAnalysisMSMPC->SetInfoCorrelator(1,4,TArrayI(4,harmonics_cor1),TArrayI(4,subevents_cor1));
+   Int_t harmonics_cor2[] = {2,2,-4};
+   Int_t subevents_cor2[] = {1,1,3};
+   FlowAnalysisMSMPC->SetInfoCorrelator(2,3,TArrayI(3,harmonics_cor2),TArrayI(3,subevents_cor2));
+   // initialize flow analysis
+   FlowAnalysisMSMPC->Init();
+ } // end of if(MSMPC)
 
  // e) Simple cuts for RPs:
  AliFlowTrackSimpleCuts *cutsRP = new AliFlowTrackSimpleCuts();
@@ -280,8 +251,8 @@ int runFlowAnalysisOnTheFly(Int_t mode=mLocal)
   // Creating the event 'on the fly':
   AliFlowEventSimple *event = eventMakerOnTheFly->CreateEventOnTheFly(cutsRP,cutsPOI);
   // Passing the created event to flow analysis methods:
-  if(MCEP){mcep->Make(event);}
-  if(ToyGF){ToyGF->Make(event);}
+  if(MCEP){FlowAnalysisMCEP->Make(event);}
+  if(MSMPC){FlowAnalysisMSMPC->Make(event);}
   delete event;
  } // end of for(Int_t i=0;i<iNevts;i++)
 
@@ -289,7 +260,7 @@ int runFlowAnalysisOnTheFly(Int_t mode=mLocal)
  TString outputFileName = "AnalysisResults.root";
  TFile *outputFile = new TFile(outputFileName.Data(),"RECREATE");
  const Int_t nMethods = 2;
- TString method[nMethods] = {"MCEP","ToyGF"};
+ TString method[nMethods] = {"MCEP","MSMPC"};
  TDirectoryFile *dirFileFinal[nMethods] = {NULL};
  TString fileName[nMethods];
  for(Int_t i=0;i<nMethods;i++)
@@ -301,8 +272,8 @@ int runFlowAnalysisOnTheFly(Int_t mode=mLocal)
  }
 
  // i) Calculate and store the final results of all methods:
- if(MCEP){mcep->Finish();mcep->WriteHistograms(dirFileFinal[0]);}
- if(ToyGF){ToyGF->Finish();ToyGF->WriteHistograms(dirFileFinal[1]);}
+ if(MCEP){FlowAnalysisMCEP->Finish();FlowAnalysisMCEP->WriteHistograms(dirFileFinal[0]);}
+ if(MSMPC){FlowAnalysisMSMPC->Finish();FlowAnalysisMSMPC->WriteHistograms(dirFileFinal[1]);}
 
  outputFile->Close();
  delete outputFile;
@@ -431,26 +402,6 @@ void CheckUserSettings()
   printf("\n WARNING: |dV6| > 0.5 !!!! Please check your settings before taking off.\n\n");
   exit(0);
  }
- if(LYZ1SUM && LYZ2SUM)
- {
-  cout<<" WARNING: You cannot run LYZ1 and LYZ2 at the same time! LYZ2 needs the output from LYZ1."<<endl;
-  exit(0);
- }
- if(LYZ1PROD && LYZ2PROD)
- {
-  cout<<" WARNING: You cannot run LYZ1 and LYZ2 at the same time! LYZ2 needs the output from LYZ1."<<endl;
-  exit(0);
- }
- if(LYZ2SUM && LYZEP)
- {
-  cout<<" WARNING: You cannot run LYZ2 and LYZEP at the same time! LYZEP needs the output from LYZ2."<<endl;
-  exit(0);
- }
- if(LYZ1SUM && LYZEP)
- {
-  cout<<" WARNING: You cannot run LYZ1 and LYZEP at the same time! LYZEP needs the output from LYZ2."<<endl;
-  exit(0);
- }
 
  if(!uniformAcceptance && phiMin1 > phiMax1)
  {
@@ -562,7 +513,6 @@ void LoadLibraries(const anaModes mode) {
 
     // Constants
     gROOT->LoadMacro("Base/AliFlowCommonConstants.cxx+");
-    gROOT->LoadMacro("Base/AliFlowLYZConstants.cxx+");
 
     // Flow event
     gROOT->LoadMacro("Base/AliFlowVector.cxx+");
@@ -573,23 +523,9 @@ void LoadLibraries(const anaModes mode) {
     // Output histosgrams
     gROOT->LoadMacro("Base/AliFlowCommonHist.cxx+");
     gROOT->LoadMacro("Base/AliFlowCommonHistResults.cxx+");
-    gROOT->LoadMacro("Base/AliFlowLYZHist1.cxx+");
-    gROOT->LoadMacro("Base/AliFlowLYZHist2.cxx+");
-
-    // Functions needed for various methods
-    gROOT->LoadMacro("Base/AliCumulantsFunctions.cxx+");
-    gROOT->LoadMacro("Base/AliFlowLYZEventPlane.cxx+");
 
     // Flow Analysis code for various methods
     gROOT->LoadMacro("Base/AliFlowAnalysisWithMCEventPlane.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithScalarProduct.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithLYZEventPlane.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithLeeYangZeros.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithCumulants.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithQCumulants.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithFittingQDistribution.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithMixedHarmonics.cxx+");
-    gROOT->LoadMacro("Base/AliFlowAnalysisWithNestedLoops.cxx+");
 
     // Class to fill the FlowEvent on the fly (generate Monte Carlo events)
     gROOT->LoadMacro("Base/AliFlowEventSimpleMakerOnTheFly.cxx+");
@@ -597,9 +533,9 @@ void LoadLibraries(const anaModes mode) {
     cout << "finished loading macros!" << endl;
 
   }
-  // load extra classes for toy generic framework
+  // load extra classes for MSMPC
   gROOT->ProcessLine(".include $ALICE_ROOT/include");
   gROOT->ProcessLine(".include $ALICE_PHYSICS/include");
-  gROOT->LoadMacro("AliFlowAnalysisCorrelator.cxx++g");
-  gROOT->LoadMacro("AliFlowAnalysisWithSimpleGF.cxx++g");
+  gROOT->LoadMacro("MSMPCorrelator.cxx++g");
+  gROOT->LoadMacro("AliFlowAnalysisMSMPC.cxx++g");
 }
